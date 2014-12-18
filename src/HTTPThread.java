@@ -43,7 +43,6 @@ public class HTTPThread implements Runnable {
                 }
 
             }
-            HTTPGUI.updateDisplay("\t\tNOW HANDLING REQUEST\t\t");//log
 
             handler.handleRequest();//start serving the client
 
@@ -63,7 +62,6 @@ public class HTTPThread implements Runnable {
             }
         }
 
-        HTTPGUI.updateDisplay("\t\tDONE SERVING..!\t\t");//the client has been served with a web page
 
     }
 

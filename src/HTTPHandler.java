@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * This classes handles all the logic in HTTP protocol.
+ * This classes handles all the logic in HTTP protocol but not all of it
  *
  * @author Newton Bujiku
  * @since Dec, 2014
@@ -15,8 +15,10 @@ public class HTTPHandler {
 
     /*
     HTTP constants
+    Read the protocol specification itself to understand them
      */
     public static final String HTTP_METHOD_GET = "GET";
+    public static final String HTTP_METHOD_HEAD= "HEAD";
     public static final String HTTP_METHOD_POST = "POST";
     private static final String HTTP_VERSION = "HTTP/1.1";
     public static final int HTTP_STATUS_CODE_OK = 200;
@@ -41,7 +43,7 @@ public class HTTPHandler {
      */
     public HTTPHandler(Socket socket) {
         this.socket = socket;
-        String pattern = "EEE, dd MMM yyyy HH:mm:ss zzz";
+        String pattern = "EEE, dd MMM yyyy HH:mm:ss zzz";//standardized date pattern
         dateFormat = new SimpleDateFormat(pattern);
         requestHeadersMap = new HashMap<String, String>();
         openSocketOutputStream(socket);//open the stream so that no NullPointerException is thrown later on
@@ -82,6 +84,9 @@ public class HTTPHandler {
         if (file.exists()) {//check if the requested file exists
             String contentType = getContentType(requestedFileName);//get the content type of the request file
             writeResponseHeaders(contentType, file.length());
+            writer.print(HTTP_CRLF);//end the headers, double \r\n
+            writer.print(HTTP_CRLF);
+
             try {
                 fileReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
                 String line = null;
@@ -93,10 +98,13 @@ public class HTTPHandler {
                 // e.printStackTrace();
                 //let the client know that the server encountered an error
                 sendResponseServerError();
+                HTTPGUI.updateDisplay("The server encountered an error");//log this
+
             } catch (IOException e) {
                 //e.printStackTrace();
                 //let the client know that the server encountered an error
                 sendResponseServerError();
+                HTTPGUI.updateDisplay("Requested url "+requestedFileName+" does not exist");//log this
 
             }
 
@@ -104,8 +112,13 @@ public class HTTPHandler {
         } else {
             //send 404 error
             //file  not be found
-            HTTPGUI.updateDisplay("File does not exist");
-            sendResponseFileNotFound(requestedFileName);
+           // HTTPGUI.updateDisplay("File does not exist");
+            //fix for safari
+            if(!requestedFileName.toLowerCase().endsWith("ico")){
+                //support safari by not sending error 404 message when it asks for .ico files
+                sendResponseFileNotFound(requestedFileName);
+
+            }
 
         }
 
@@ -159,7 +172,12 @@ public class HTTPHandler {
             return "text/css";
         }else if(requestedFileName.toLowerCase().endsWith("mp3")){
             return "audio/mpeg";
+        }else if(requestedFileName.toLowerCase().endsWith("ico")){
+            //safari keeps asking for this kind of files
+            return "image/x-icon";
         }
+
+
         return "";
     }
 
@@ -170,6 +188,28 @@ public class HTTPHandler {
      */
     public void doHTTPHEAD(String requestedFileName) {
 
+        // send headers of a file only
+        //don't send the file
+        if (requestedFileName.equals("/")) {//request to the document root,should return an index file
+            requestedFileName = "/index.html";
+        }
+        File file = new File(HTTPServer.DOCUMENT_ROOT+requestedFileName);
+
+        if(file.exists()){
+            //apparently calling the doHTTPGET method is the only thing that works here
+            //and it does return only the headers???how does it work??still learning HTTP
+            //writing the headers explicitly does not work
+            doHTTPGET(requestedFileName);
+            //file exists send the headers
+            //writeResponseHeaders(getContentType(requestedFileName),file.length());
+            //writer.print("Connection : close");
+            writer.print(HTTP_CRLF);//end the headers, double \r\n
+            writer.print(HTTP_CRLF);
+
+        }else{
+            //the file is not on this server
+            sendResponseFileNotFound(requestedFileName);
+        }
     }
 
     /**
@@ -182,26 +222,28 @@ public class HTTPHandler {
         //get a standardized Date format like Sun, 12 Oct 2015 21:45:06 GMT
 
 
-        System.out.println("\t\tRESPONSE HEADERS\t\t");//get ready to start writing the headers
+        HTTPGUI.updateDisplay("\t\tRESPONSE HEADERS\t\t");//get ready to start writing the headers
         writer.print(HTTP_VERSION + " " + HTTP_STATUS_CODE_OK + " " + HTTP_STATUS_MESSAGE_OK+HTTP_CRLF);//status line
-        System.out.println(HTTP_VERSION + " " + HTTP_STATUS_CODE_OK + " " + HTTP_STATUS_MESSAGE_OK);//log
+        HTTPGUI.updateDisplay(HTTP_VERSION + " " + HTTP_STATUS_CODE_OK + " " + HTTP_STATUS_MESSAGE_OK);//log
 
         writer.print("Date: " + dateFormat.format(new Date())+HTTP_CRLF);//Date
-        System.out.println("Date: " + dateFormat.format(new Date()));//log
+        HTTPGUI.updateDisplay("Date: " + dateFormat.format(new Date()));//log
 
         writer.print("Content-Length: " + contentLength+HTTP_CRLF);//Content-length
-        System.out.println("Content-Length: " + contentLength);//log
+        HTTPGUI.updateDisplay("Content-Length: " + contentLength);//log
 
         writer.print("Server : " + HTTPServer.SERVER+HTTP_CRLF);//Server
-        System.out.println("Server " + HTTPServer.SERVER);//log
+        HTTPGUI.updateDisplay("Server " + HTTPServer.SERVER);//log
 
         writer.print("Content-Type: " + contentType + "; charset=UTF-8");//Content-type
-        System.out.println("Content-Type: " + contentType);//log
+        HTTPGUI.updateDisplay("Content-Type: " + contentType);//log
 
-        writer.print(HTTP_CRLF);//end the headers, double \r\n
-        writer.print(HTTP_CRLF);
 
     }
+
+    /**
+     * To be invoked when an internal error has been encountered
+     */
 
     public void sendResponseServerError(){
 
@@ -217,6 +259,14 @@ public class HTTPHandler {
 
 
     }
+
+    /**
+     * Sends the error message body to the client
+     *
+     * @param httpMessage the specific error message
+     * @param bodyMessage the body of the response
+     * @param httpCode HTTP error code
+     */
 
     private void writeErrorMessageBody(String httpMessage,String bodyMessage,int httpCode) {
         writer.print(
@@ -241,6 +291,10 @@ public class HTTPHandler {
 
     }
 
+
+    /**
+     * Writes the error headers
+     */
     private void writeErrorHeaders() {
         writer.print("Date: "+dateFormat.format(new Date())+HTTP_CRLF);
 
@@ -248,11 +302,14 @@ public class HTTPHandler {
 
         writer.print("Server: "+HTTPServer.SERVER+HTTP_CRLF);
 
-       // writer.print("Transfer-Encoding: "+"chunked");
-
         writer.print(HTTP_CRLF);
         writer.print(HTTP_CRLF);
     }
+
+    /**
+     * Send an error message when a client has requested a file that does not exist on this server
+     * @param url URL of non existing file
+     */
 
     public void sendResponseFileNotFound(String url){
 
@@ -271,9 +328,11 @@ public class HTTPHandler {
     public void handleRequest() {
         if (requestLine[0].trim().equals(HTTP_METHOD_GET)) {
             doHTTPGET(requestLine[1].trim());
-        } else if (requestLine[0].equals(HTTP_METHOD_POST)) {
+        } else if (requestLine[0].trim().equals(HTTP_METHOD_POST)) {
             doHTTPPOST(requestLine[1].trim());
-        } else {
+        } else if (requestLine[0].trim().equals(HTTP_METHOD_HEAD)){
+            doHTTPHEAD(requestLine[1].trim());
+        }else{
             //send error report telling the client the server could not understand the request
         }
 
@@ -311,6 +370,7 @@ public class HTTPHandler {
      *Set the socket
      * @param socket socket object for communication
      */
+
     public void setSocket(Socket socket) {
         this.socket = socket;
         if (writer == null) {
