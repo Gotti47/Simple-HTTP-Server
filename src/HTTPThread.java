@@ -32,11 +32,10 @@ public class HTTPThread implements Runnable {
             reader= new BufferedReader(new InputStreamReader(socket.getInputStream()));//for reading from the socket
             String line =null;
             HTTPHandler handler = new HTTPHandler(socket);
-            //System.out.println("\t\tREQUEST HEADERS\t\t");//start logging the request headers
             HTTPGUI.updateDisplay("\t\tREQUEST HEADERS\t\t");//start logging the request headers
             while(!(line=reader.readLine()).equals("")){//HTTP uses \r\n to separate,the body and headers,read until
                                                         //"" is reached
-               HTTPGUI.updateDisplay(line);//log
+            HTTPGUI.updateDisplay(line);//log
                 if(line.contains(":")){
                   handler.setRequestHeader(line);//we have a header here,key-value pair separated by :
                 }else{
@@ -44,7 +43,7 @@ public class HTTPThread implements Runnable {
                 }
 
             }
-            System.out.println("\t\tNOW HANDLING REQUEST\t\t");//log
+            HTTPGUI.updateDisplay("\t\tNOW HANDLING REQUEST\t\t");//log
 
             handler.handleRequest();//start serving the client
 
@@ -59,13 +58,12 @@ public class HTTPThread implements Runnable {
                 try {
                     reader.close();
                 } catch (IOException e) {
-                    //e.printStackTrace();
                 }
 
             }
         }
 
-        System.out.println("\t\tDONE SERVING..!\t\t");//the client has been served with a web page
+        HTTPGUI.updateDisplay("\t\tDONE SERVING..!\t\t");//the client has been served with a web page
 
     }
 
