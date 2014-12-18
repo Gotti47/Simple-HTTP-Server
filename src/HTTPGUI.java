@@ -59,11 +59,22 @@ public class HTTPGUI extends JFrame implements ActionListener,MouseListener {
     }
 
 
-/*
-    public  static void updateDisplay(String message){
-        messageDisplay.setText(" " + messageDisplay.getText() + "\n" + " " + message + "\n");
+    /**
+     * This method sends log messages to the display.
+     * The action itself is done inside the run method of a runnable
+     * ensuring that the thread that invoked this method does not touch the GUI components.
+     * Only the Event Dispatch Thread is allowed to touch the views
+     */
+    public  static void updateDisplay(final String message){
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                messageDisplay.setText(" " + messageDisplay.getText() + "\n" + " " + message + "\n");
 
-    }*/
+            }
+        });
+
+    }
 
     @Override
     public void actionPerformed(ActionEvent event) {
@@ -352,6 +363,9 @@ public class HTTPGUI extends JFrame implements ActionListener,MouseListener {
         pane.add(BorderLayout.CENTER, midPanel);
         pane.add(BorderLayout.SOUTH,bottomPanel);
 
+        /*Set up the frame
+         *
+         */
 
         setSize(FRAME_WIDTH,FRAME_HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);//exit when close button is clicked
@@ -359,7 +373,7 @@ public class HTTPGUI extends JFrame implements ActionListener,MouseListener {
         setTitle(FRAME_TITLE);
         setContentPane(pane);//add the main pane to the frame
         setDefaultLookAndFeelDecorated(true);
-        setVisible(true);
+        setVisible(true);//make it visible
     }
 
 }
