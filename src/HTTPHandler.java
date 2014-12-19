@@ -113,8 +113,7 @@ public class HTTPHandler {
             //send 404 error
             //file  not be found
            // HTTPGUI.updateDisplay("File does not exist");
-            //fix for safari
-                //support safari by not sending error 404 message when it asks for .ico files
+               //stupid chrome and safari probably things will go wrong here when they request some favicon.ico
                 sendResponseFileNotFound(requestedFileName);
 
 
@@ -171,7 +170,7 @@ public class HTTPHandler {
         }else if(requestedFileName.toLowerCase().endsWith("mp3")){
             return "audio/mpeg";
         }else if(requestedFileName.toLowerCase().endsWith("ico")){
-            //safari keeps asking for this kind of files
+            //safari and  chrome keep asking for this kind of files
             return "image/x-icon";
         }
 
