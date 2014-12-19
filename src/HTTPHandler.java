@@ -114,11 +114,9 @@ public class HTTPHandler {
             //file  not be found
            // HTTPGUI.updateDisplay("File does not exist");
             //fix for safari
-            if(!requestedFileName.toLowerCase().endsWith("ico")){
                 //support safari by not sending error 404 message when it asks for .ico files
                 sendResponseFileNotFound(requestedFileName);
 
-            }
 
         }
 

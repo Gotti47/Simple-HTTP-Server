@@ -52,6 +52,7 @@ public class HTTPServer {
             //socket in use
 
             if(!stopped){
+            	stopped=true;
                 //server not running but was not stopped intentionally
                 HTTPGUI.updateDisplay("Could not start server on port "+PORT_NUMBER);
 
@@ -73,6 +74,8 @@ public class HTTPServer {
         if (server!=null){
             try {
                 server.close();//close the socket to stop the server
+                //send this info to the display area
+                HTTPGUI.updateDisplay("Server stopped on "+new Date().toString());
             } catch (IOException e) {
 
             }
