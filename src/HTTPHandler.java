@@ -97,7 +97,7 @@ public class HTTPHandler {
             } catch (FileNotFoundException e) {
                 // e.printStackTrace();
                 //let the client know that the server encountered an error
-                sendResponseServerError();
+               sendResponseServerError();
                 HTTPGUI.updateDisplay("The server encountered an error");//log this
 
             } catch (IOException e) {
